@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crucigrama de Sostenibilidad ESG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .grid-cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background-color: #f9f9f9;
+        }
+        .grid-cell.active {
+            background-color: white;
+            border: 2px solid #2D5A27;
+        }
+        .grid-cell input {
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            text-transform: uppercase;
+            font-weight: bold;
+            outline: none;
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+        }
+        .number-label {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 10px;
+            color: #2D5A27;
+            font-weight: bold;
+        }
+        .correct { background-color: #d1fae5 !important; }
+        .incorrect { background-color: #fee2e2 !important; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-8 font-sans">
+
+    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-green-800 uppercase tracking-wide">Desafío de Sostenibilidad</h1>
+            <p class="text-gray-600 mt-2">Pon a prueba tus conocimientos sobre los indicadores ESG</p>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-10">
+            <!-- Tablero -->
+            <div id="crossword-container" class="flex-1 overflow-auto p-4 bg-gray-100 rounded-xl flex justify-center items-start">
+                <div id="grid" class="inline-grid gap-0" style="grid-template-columns: repeat(14, 40px);">
+                    <!-- Generado dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Pistas -->
+            <div class="w-full lg:w-80">
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-green-700 border-b-2 border-green-700 mb-4">Horizontales</h2>
+                    <ul class="space-y-3 text-sm text-gray-700">
+                        <li><strong>1.</strong> Acrónimo de indicadores Ambientales, Sociales y de Gobernanza.</li>
+                        <li><strong>3.</strong> Análisis para identificar temas críticos de la empresa.</li>
+                        <li><strong>5.</strong> Siglas del marco de reporte más utilizado en el mundo.</li>
+                        <li><strong>7.</strong> Ámbito que mide la ética y anticorrupción.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-blue-700 border-b-2 border-blue-700 mb-4">Verticales</h2>
+                    <ul class="space-y-3 text-sm text-gray-700">
+                        <li><strong>2.</strong> Huella que mide las emisiones de gases efecto invernadero.</li>
+                        <li><strong>4.</strong> Siglas del marco enfocado en riesgos financieros climáticos.</li>
+                        <li><strong>6.</strong> Recurso vital medido por el estrés hídrico.</li>
+                    </ul>
+                </div>
+
+                <div class="mt-10">
+                    <button onclick="checkAnswers()" class="w-full bg-green-700 text-white py-3 rounded-lg font-bold hover:bg-green-800 transition">Verificar Resultados</button>
+                    <button onclick="resetGame()" class="w-full mt-2 text-gray-500 py-2 text-sm hover:underline">Reiniciar</button>
+                </div>
+                <div id="feedback" class="mt-4 text-center font-bold hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mapa del crucigrama (x, y, char, numberLabel)
+        const puzzleData = [
+            // ESG (Horizontal 1)
+            {x: 2, y: 1, char: 'E', num: 1}, {x: 3, y: 1, char: 'S'}, {x: 4, y: 1, char: 'G'},
+            // CARBONO (Vertical 2)
+            {x: 2, y: 2, char: 'C', num: 2}, {x: 2, y: 3, char: 'A'}, {x: 2, y: 4, char: 'R'}, {x: 2, y: 5, char: 'B'}, {x: 2, y: 6, char: 'O'}, {x: 2, y: 7, char: 'N'}, {x: 2, y: 8, char: 'O'},
+            // MATERIALIDAD (Horizontal 3)
+            {x: 1, y: 4, char: 'M', num: 3}, {x: 3, y: 4, char: 'T'}, {x: 4, y: 4, char: 'E'}, {x: 5, y: 4, char: 'R'}, {x: 6, y: 4, char: 'I'}, {x: 7, y: 4, char: 'A'}, {x: 8, y: 4, char: 'L'}, {x: 9, y: 4, char: 'I'}, {x: 10, y: 4, char: 'D'}, {x: 11, y: 4, char: 'A'}, {x: 12, y: 4, char: 'D'},
+            // TCFD (Vertical 4)
+            {x: 3, y: 4, char: 'T', num: 4}, {x: 3, y: 5, char: 'C'}, {x: 3, y: 6, char: 'F'}, {x: 3, y: 7, char: 'D'},
+            // GRI (Horizontal 5)
+            {x: 6, y: 7, char: 'G', num: 5}, {x: 7, y: 7, char: 'R'}, {x: 8, y: 7, char: 'I'},
+            // AGUA (Vertical 6)
+            {x: 8, y: 7, char: 'I', num: 6, skip: true}, // Placeholder para cruce
+            {x: 8, y: 6, char: 'A', num: 6}, {x: 8, y: 8, char: 'U'}, {x: 8, y: 9, char: 'A'},
+            // GOBERNANZA (Horizontal 7)
+            {x: 1, y: 10, char: 'G', num: 7}, {x: 2, y: 10, char: 'O'}, {x: 3, y: 10, char: 'B'}, {x: 4, y: 10, char: 'E'}, {x: 5, y: 10, char: 'R'}, {x: 6, y: 10, char: 'N'}, {x: 7, y: 10, char: 'A'}, {x: 8, y: 10, char: 'N'}, {x: 9, y: 10, char: 'Z'}, {x: 10, y: 10, char: 'A'}
+        ];
+
+        const grid = document.getElementById('grid');
+        const rows = 12;
+        const cols = 14;
+
+        function initGrid() {
+            grid.innerHTML = '';
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const cellData = puzzleData.find(d => d.x === x && d.y === y);
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    
+                    if (cellData) {
+                        cell.classList.add('active');
+                        if (cellData.num) {
+                            const label = document.createElement('span');
+                            label.className = 'number-label';
+                            label.innerText = cellData.num;
+                            cell.appendChild(label);
+                        }
+                        const input = document.createElement('input');
+                        input.maxLength = 1;
+                        input.dataset.x = x;
+                        input.dataset.y = y;
+                        input.dataset.answer = cellData.char;
+                        cell.appendChild(input);
+                    }
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function checkAnswers() {
+            const inputs = document.querySelectorAll('input');
+            let correctCount = 0;
+            let totalCells = inputs.length;
+
+            inputs.forEach(input => {
+                if (input.value.toUpperCase() === input.dataset.answer) {
+                    input.parentElement.classList.add('correct');
+                    input.parentElement.classList.remove('incorrect');
+                    correctCount++;
+                } else {
+                    input.parentElement.classList.add('incorrect');
+                    input.parentElement.classList.remove('correct');
+                }
+            });
+
+            const feedback = document.getElementById('feedback');
+            feedback.classList.remove('hidden');
+            if (correctCount === totalCells) {
+                feedback.innerText = "¡Excelente! Has dominado los conceptos de sostenibilidad.";
+                feedback.className = "mt-4 text-center font-bold text-green-700";
+            } else {
+                feedback.innerText = `Has acertado ${correctCount} de ${totalCells} letras. ¡Sigue intentando!`;
+                feedback.className = "mt-4 text-center font-bold text-orange-600";
+            }
+        }
+
+        function resetGame() {
+            initGrid();
+            const feedback = document.getElementById('feedback');
+            feedback.classList.add('hidden');
+        }
+
+        window.onload = initGrid;
+    </script>
+</body>
+</html>
